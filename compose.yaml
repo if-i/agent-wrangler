@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  core:
+    build:
+      context: ../agents-wrangler-core
+      dockerfile: Dockerfile
+    environment:
+      # По умолчанию ядро использует мок-LLM. Для реальной модели выстави USE_MOCK_LLM=0 и OPENAI_*.
+      - USE_MOCK_LLM=1
+      - TESTER_URL=http://tester:7001
+      - RUST_LOG=info
+      # - OPENAI_API_KEY=sk-...
+      # - OPENAI_BASE_URL=https://api.openai.com
+      # - OPENAI_MODEL=gpt-4o-mini
+    ports:
+      - "8080:8080"
+    depends_on:
+      - tester
+
+  tester:
+    build:
+      context: .
+      dockerfile: docker/tester.Dockerfile
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "7001:7001"
