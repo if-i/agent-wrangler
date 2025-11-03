@@ -1,0 +1,34 @@
+version: "3.9"
+
+x-codex-runner: &codex-runner
+  build:
+    context: .
+    dockerfile: docker/codex-runner.Dockerfile
+  environment:
+    - CODEX_MODEL=qwen2.5-coder:7b-instruct
+
+services:
+  # Ядро получает пулы URL’ов для каждой роли
+  core:
+    environment:
+      - LLM_PROVIDER=codex
+      - TESTER_URL=http://tester:7001
+      - CODEX_PLAN_URLS=http://codex-arch:7002
+      - CODEX_BUILDER_URLS=http://codex-build-1:7002,http://codex-build-2:7002,http://codex-build-3:7002
+      - CODEX_REVIEW_URLS=http://codex-review:7002
+
+  codex-arch:
+    <<: *codex-runner
+    ports: ["7003:7002"]
+
+  codex-build-1:
+    <<: *codex-runner
+
+  codex-build-2:
+    <<: *codex-runner
+
+  codex-build-3:
+    <<: *codex-runner
+
+  codex-review:
+    <<: *codex-runner
