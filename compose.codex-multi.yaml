@@ -1,5 +1,3 @@
-version: "3.9"
-
 x-codex-runner: &codex-runner
   build:
     context: .
