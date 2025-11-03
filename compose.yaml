@@ -1,22 +1,19 @@
-version: "3.9"
-
 services:
   core:
     build:
       context: ../agents-wrangler-core
       dockerfile: Dockerfile
     environment:
-      # По умолчанию ядро использует мок-LLM. Для реальной модели выстави USE_MOCK_LLM=0 и OPENAI_*.
-      - USE_MOCK_LLM=1
+      - LLM_PROVIDER=codex           # <— ново: используем Codex-CLI через HTTP-раннер
+      - CODEX_RUNNER_URL=http://codex-runner:7002
       - TESTER_URL=http://tester:7001
+      - USE_MOCK_LLM=1               # план/ревью останутся моковыми в демо; патчи — через Codex
       - RUST_LOG=info
-      # - OPENAI_API_KEY=sk-...
-      # - OPENAI_BASE_URL=https://api.openai.com
-      # - OPENAI_MODEL=gpt-4o-mini
     ports:
       - "8080:8080"
     depends_on:
       - tester
+      - codex-runner
 
   tester:
     build:
@@ -27,3 +24,32 @@ services:
       - PYTHONUNBUFFERED=1
     ports:
       - "7001:7001"
+
+  # Локальная инференс-платформа (по умолчанию CPU; можно добавить GPU runtime)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+
+  # Обёртка над Codex CLI — HTTP API для ядра
+  codex-runner:
+    build:
+      context: .
+      dockerfile: docker/codex-runner.Dockerfile
+    environment:
+      - CODEX_MODEL=qwen2.5-coder:7b-instruct
+      - OLLAMA_BASE_URL=http://ollama:11434/v1
+    depends_on:
+      - ollama
+    ports:
+      - "7002:7002"
+
+volumes:
+  ollama:
