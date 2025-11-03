@@ -11,7 +11,7 @@ app = typer.Typer(help="CLI для общения с ядром Agent Wrangler."
 
 
 def _print_json(data: dict[str, Any]) -> None:
-    """Печатает JSON красиво, чтобы легко читать ответ."""
+    """Красиво печатает JSON‑ответы."""
     sys.stdout.write(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
 
@@ -21,9 +21,30 @@ def submit(
     builders: int = typer.Option(3, "--builders", "-n", min=1, max=8, help="Число параллельных билдеров"),
     core_url: str = typer.Option("http://localhost:8080", "--core-url", help="Базовый URL ядра"),
 ) -> None:
-    """Отправляет задачу в ядро на исполнение мостом и печатает результат."""
+    """Отправляет задачу в простой мост (best‑of‑N)."""
     payload = {"task": task, "builders": builders}
     with httpx.Client(timeout=60.0) as client:
         r = client.post(f"{core_url}/api/v1/bridge", json=payload)
+        r.raise_for_status()
+        _print_json(r.json())
+
+
+@app.command("submit-multi")
+def submit_multi(
+    task: str = typer.Option(..., "--task", "-t", help="Описание цели"),
+    builders: int = typer.Option(3, "--builders", "-n", min=1, max=8, help="Число билдеров"),
+    reviewers: int = typer.Option(2, "--reviewers", "-k", min=0, max=8, help="Число ревьюеров"),
+    specialists: int = typer.Option(2, "--specialists", "-s", min=0, max=8, help="Число специалистов на компонент"),
+    core_url: str = typer.Option("http://localhost:8080", "--core-url", help="Базовый URL ядра"),
+) -> None:
+    """Отправляет задачу в мультиагентный мост: архитектор → билдеры → специалисты → финальный ревью."""
+    payload = {
+        "task": task,
+        "builders": builders,
+        "reviewers": reviewers,
+        "specialists": specialists,
+    }
+    with httpx.Client(timeout=90.0) as client:
+        r = client.post(f"{core_url}/api/v1/bridge/multi", json=payload)
         r.raise_for_status()
         _print_json(r.json())
