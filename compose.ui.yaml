@@ -1,0 +1,7 @@
+services:
+  ui:
+    build:
+      context: .
+      dockerfile: docker/ui.Dockerfile
+    ports: ["8501:8501"]
+    depends_on: ["tester","codex-arch","codex-build-1","codex-build-2","codex-build-3","codex-review"]
