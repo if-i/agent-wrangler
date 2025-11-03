@@ -8,8 +8,9 @@ Use it together with the neighbouring repository **agents-wrangler-core** (Rust)
 
 ```bash
 # place both repositories side by side:
-# ~/work/agents-wrangler
+# ~/work/agent-wrangler
 # ~/work/agents-wrangler-core
+cd ~/work/agent-wrangler
 docker compose up --build
 ```
 
@@ -21,6 +22,12 @@ aw submit --task "Fix add() to return a + b" --builders 3
 curl -s -X POST http://localhost:8080/api/v1/bridge \
   -H "content-type: application/json" \
   -d '{"task":"Fix add() to return a + b","builders":3}' | jq .
+```
+
+Multiagent bridge:
+
+```bash
+aw submit-multi --task "Fix add() to return a + b" --builders 3 --reviewers 2 --specialists 2
 ```
 
 ### What the tester-service does
